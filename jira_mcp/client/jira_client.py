@@ -126,7 +126,16 @@ class JiraClient:
         Raises:
             JiraAPIError: If request fails after retries
         """
-        url = endpoint if endpoint.startswith("http") else f"/rest/api/2{endpoint}"
+        # Handle different endpoint formats:
+        # - Full URLs (http/https) - use as-is
+        # - Full REST paths (/rest/...) - use as-is (for Agile API, etc.)
+        # - Relative paths (/issues/...) - prepend REST API v2 base
+        if endpoint.startswith("http"):
+            url = endpoint
+        elif endpoint.startswith("/rest/"):
+            url = endpoint
+        else:
+            url = f"/rest/api/2{endpoint}"
 
         try:
             logger.debug(f"{method} {url} (attempt {retry_count + 1})")
@@ -382,10 +391,21 @@ class JiraClient:
             "startAt": start_at,
         }
 
-        if fields:
+        # Cloud API v3 requires explicit fields (new search/jql endpoint doesn't return them by default)
+        if self.config.is_cloud:
+            default_fields = [
+                "summary", "status", "priority", "issuetype", "assignee",
+                "reporter", "created", "updated", "description", "labels",
+                "components", "project", "resolution", "resolutiondate"
+            ]
+            params["fields"] = ",".join(fields if fields else default_fields)
+        elif fields:
             params["fields"] = ",".join(fields)
 
-        return await self._request("GET", "/search", params=params)
+        # Use new search/jql endpoint for Cloud (old endpoints deprecated - 410)
+        # See: https://developer.atlassian.com/changelog/#CHANGE-2046
+        endpoint = "/rest/api/3/search/jql" if self.config.is_cloud else "/search"
+        return await self._request("GET", endpoint, params=params)
 
     async def batch_create_issues(
         self,
