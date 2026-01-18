@@ -72,7 +72,7 @@ def register_field_tools(mcp: FastMCP, client: JiraClient, config: JiraConfig) -
 
         try:
             logger.info(f"Searching fields{f' with query: {query}' if query else ''}")
-            result = await client.search_fields(query)
+            result = await client.get_fields()
 
             # API returns array directly
             if isinstance(result, list):

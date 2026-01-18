@@ -143,10 +143,11 @@ def register_sprint_tools(mcp: FastMCP, client: JiraClient, config: JiraConfig) 
             return "Tool 'jira_get_sprints_from_board' is disabled by configuration."
 
         try:
-            sprints = await client.get_sprints_from_board(
+            result = await client.get_sprints(
                 board_id=board_id,
                 state=state,
             )
+            sprints = result.get("values", []) if isinstance(result, dict) else result
             return format_sprints(sprints, board_id)
         except Exception as e:
             return f"Error retrieving sprints: {str(e)}"

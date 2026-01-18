@@ -105,10 +105,11 @@ def register_board_tools(mcp: FastMCP, client: JiraClient, config: JiraConfig) -
             return "Tool 'jira_get_agile_boards' is disabled by configuration."
 
         try:
-            boards = await client.get_agile_boards(
+            result = await client.get_agile_boards(
                 project_key=project_key,
                 board_type=board_type,
             )
+            boards = result.get("values", []) if isinstance(result, dict) else result
             return format_boards(boards)
         except Exception as e:
             return f"Error retrieving boards: {str(e)}"
