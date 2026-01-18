@@ -116,7 +116,9 @@ def register_attachment_tools(mcp: FastMCP, client: JiraClient, config: JiraConf
         if not config.is_tool_enabled("jira_download_attachments"):
             return "Tool is disabled by configuration"
 
-        result = await client.get_attachments(issue_key)
+        issue = await client.get_issue(issue_key, fields=["attachment"])
+        attachments = issue.get("fields", {}).get("attachment", [])
+        result = {"attachments": attachments}
         return format_attachments(result)
 
     @mcp.tool()
@@ -149,7 +151,7 @@ def register_attachment_tools(mcp: FastMCP, client: JiraClient, config: JiraConf
             return "Operation not allowed: Server is in read-only mode"
 
         result = await client.add_attachment(
-            issue_key=issue_key,
+            key=issue_key,
             file_path=file_path,
             filename=filename if filename else None,
         )

@@ -133,7 +133,9 @@ def register_issue_tools(mcp: FastMCP, client: JiraClient, config: JiraConfig) -
 
         try:
             logger.info(f"Getting issue: {issue_key}")
-            result = await client.get_issue(issue_key, fields, expand)
+            fields_list = [f.strip() for f in fields.split(",") if f.strip()] if fields else None
+            expand_list = [e.strip() for e in expand.split(",") if e.strip()] if expand else None
+            result = await client.get_issue(issue_key, fields_list, expand_list)
             return format_issue(result)
         except Exception as e:
             logger.error(f"Failed to get issue {issue_key}: {e}")
@@ -360,7 +362,8 @@ def register_issue_tools(mcp: FastMCP, client: JiraClient, config: JiraConfig) -
 
         try:
             logger.info(f"Searching issues with JQL: {jql}")
-            result = await client.search_issues(jql, start_at, max_results, fields)
+            fields_list = [f.strip() for f in fields.split(",") if f.strip()] if fields else None
+            result = await client.search_issues(jql, fields_list, max_results, start_at)
             return format_search_results(result)
         except Exception as e:
             logger.error(f"Failed to search issues: {e}")
@@ -485,11 +488,17 @@ def register_issue_tools(mcp: FastMCP, client: JiraClient, config: JiraConfig) -
             keys_list = [key.strip() for key in issue_keys.split(",")]
             logger.info(f"Getting changelogs for {len(keys_list)} issues")
 
-            result = await client.get_changelogs(keys_list)
+            changelogs = []
+            for key in keys_list:
+                try:
+                    changelog_data = await client.get_issue_changelog(key)
+                    changelogs.append({"issueKey": key, "changelog": changelog_data.get("changelog", {})})
+                except Exception as e:
+                    logger.warning(f"Failed to get changelog for {key}: {e}")
 
             output = "# Issue Changelogs\n\n"
 
-            for issue_data in result.get("values", []):
+            for issue_data in changelogs:
                 key = issue_data.get("issueKey", "N/A")
                 histories = issue_data.get("changelog", {}).get("histories", [])
 

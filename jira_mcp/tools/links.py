@@ -8,16 +8,15 @@ from jira_mcp.client import JiraClient
 from jira_mcp.config import JiraConfig
 
 
-def format_link_types(data: dict[str, Any]) -> str:
+def format_link_types(link_types: list[dict[str, Any]]) -> str:
     """Format issue link types into readable markdown.
 
     Args:
-        data: Link types data from API
+        link_types: List of link type dictionaries from API
 
     Returns:
         Formatted markdown string
     """
-    link_types = data.get("issueLinkTypes", [])
 
     if not link_types:
         return "No issue link types found."
@@ -92,8 +91,11 @@ def register_link_tools(mcp: FastMCP, client: JiraClient, config: JiraConfig) ->
         if not config.is_tool_enabled("jira_get_link_types"):
             return "Tool is disabled by configuration"
 
-        result = await client.get_link_types()
-        return format_link_types(result)
+        try:
+            result = await client.get_link_types()
+            return format_link_types(result)
+        except Exception as e:
+            return f"Error retrieving link types: {str(e)}"
 
     @mcp.tool()
     async def jira_create_issue_link(
@@ -127,8 +129,8 @@ def register_link_tools(mcp: FastMCP, client: JiraClient, config: JiraConfig) ->
 
         result = await client.create_issue_link(
             link_type=link_type,
-            inward_issue=inward_issue,
-            outward_issue=outward_issue,
+            inward_key=inward_issue,
+            outward_key=outward_issue,
             comment=comment if comment else None,
         )
         return format_issue_link(result)
@@ -193,8 +195,8 @@ def register_link_tools(mcp: FastMCP, client: JiraClient, config: JiraConfig) ->
         if config.read_only:
             return "Operation not allowed: Server is in read-only mode"
 
-        result = await client.create_remote_issue_link(
-            issue_key=issue_key,
+        result = await client.create_remote_link(
+            key=issue_key,
             url=url,
             title=title,
             summary=summary if summary else None,

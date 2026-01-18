@@ -553,17 +553,27 @@ class JiraClient:
         endpoint = "/rest/agile/1.0/board"
         return await self._request("GET", endpoint, params=params)
 
-    async def get_board_issues(self, board_id: int) -> dict[str, Any]:
+    async def get_board_issues(
+        self,
+        board_id: int,
+        jql: Optional[str] = None,
+        max_results: int = 50,
+    ) -> dict[str, Any]:
         """Get issues on a board.
 
         Args:
             board_id: Board ID
+            jql: Optional JQL filter
+            max_results: Maximum number of results to return
 
         Returns:
             Issues data
         """
+        params: dict[str, Any] = {"maxResults": max_results}
+        if jql:
+            params["jql"] = jql
         endpoint = f"/rest/agile/1.0/board/{board_id}/issue"
-        return await self._request("GET", endpoint)
+        return await self._request("GET", endpoint, params=params)
 
     async def get_sprints(
         self,
@@ -586,17 +596,27 @@ class JiraClient:
         endpoint = f"/rest/agile/1.0/board/{board_id}/sprint"
         return await self._request("GET", endpoint, params=params)
 
-    async def get_sprint_issues(self, sprint_id: int) -> dict[str, Any]:
+    async def get_sprint_issues(
+        self,
+        sprint_id: int,
+        jql: Optional[str] = None,
+        max_results: int = 50,
+    ) -> dict[str, Any]:
         """Get issues in a sprint.
 
         Args:
             sprint_id: Sprint ID
+            jql: Optional JQL filter
+            max_results: Maximum number of results to return
 
         Returns:
             Issues data
         """
+        params: dict[str, Any] = {"maxResults": max_results}
+        if jql:
+            params["jql"] = jql
         endpoint = f"/rest/agile/1.0/sprint/{sprint_id}/issue"
-        return await self._request("GET", endpoint)
+        return await self._request("GET", endpoint, params=params)
 
     async def create_sprint(
         self,
@@ -604,6 +624,7 @@ class JiraClient:
         name: str,
         start_date: Optional[str] = None,
         end_date: Optional[str] = None,
+        goal: Optional[str] = None,
     ) -> dict[str, Any]:
         """Create a new sprint.
 
@@ -612,6 +633,7 @@ class JiraClient:
             name: Sprint name
             start_date: ISO 8601 start date
             end_date: ISO 8601 end date
+            goal: Sprint goal
 
         Returns:
             Created sprint data
@@ -624,6 +646,8 @@ class JiraClient:
             data["startDate"] = start_date
         if end_date:
             data["endDate"] = end_date
+        if goal:
+            data["goal"] = goal
 
         endpoint = "/rest/agile/1.0/sprint"
         return await self._request("POST", endpoint, json_data=data)
@@ -692,6 +716,7 @@ class JiraClient:
         link_type: str,
         inward_key: str,
         outward_key: str,
+        comment: Optional[str] = None,
     ) -> dict[str, Any]:
         """Create link between two issues.
 
@@ -699,15 +724,18 @@ class JiraClient:
             link_type: Link type name
             inward_key: Inward issue key
             outward_key: Outward issue key
+            comment: Optional comment for the link
 
         Returns:
             Empty response on success
         """
-        data = {
+        data: dict[str, Any] = {
             "type": {"name": link_type},
             "inwardIssue": {"key": inward_key},
             "outwardIssue": {"key": outward_key},
         }
+        if comment:
+            data["comment"] = {"body": comment}
         return await self._request("POST", "/issueLink", json_data=data)
 
     async def remove_issue_link(self, link_id: str) -> dict[str, Any]:
@@ -726,6 +754,7 @@ class JiraClient:
         key: str,
         url: str,
         title: str,
+        summary: Optional[str] = None,
     ) -> dict[str, Any]:
         """Create remote link (external URL) for issue.
 
@@ -733,16 +762,19 @@ class JiraClient:
             key: Issue key
             url: Remote URL
             title: Link title
+            summary: Optional link summary
 
         Returns:
             Created link data
         """
-        data = {
+        data: dict[str, Any] = {
             "object": {
                 "url": url,
                 "title": title,
             }
         }
+        if summary:
+            data["object"]["summary"] = summary
         return await self._request("POST", f"/issue/{key}/remotelink", json_data=data)
 
     # ================== Worklog Operations ==================
