@@ -87,7 +87,7 @@ def register_epic_tools(mcp: FastMCP, client: JiraClient, config: JiraConfig) ->
             return "Cannot link issue to epic: Server is in read-only mode."
 
         try:
-            await client.link_to_epic(
+            await client.link_issue_to_epic(
                 issue_key=issue_key,
                 epic_key=epic_key,
             )
