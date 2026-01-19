@@ -21,9 +21,9 @@ def format_issue(issue: dict[str, Any]) -> str:
     fields = issue.get("fields", {})
     key = issue.get("key", "N/A")
     summary = fields.get("summary", "N/A")
-    status = fields.get("status", {}).get("name", "N/A")
-    issue_type = fields.get("issuetype", {}).get("name", "N/A")
-    assignee = fields.get("assignee", {}).get("displayName", "Unassigned")
+    status = (fields.get("status") or {}).get("name", "N/A")
+    issue_type = (fields.get("issuetype") or {}).get("name", "N/A")
+    assignee = (fields.get("assignee") or {}).get("displayName", "Unassigned")
     description = fields.get("description", "No description")
 
     # Handle Atlassian Document Format (ADF) for description
@@ -88,7 +88,7 @@ def format_search_results(results: dict[str, Any]) -> str:
         fields = issue.get("fields", {})
         key = issue.get("key", "N/A")
         summary = fields.get("summary", "N/A")
-        status = fields.get("status", {}).get("name", "N/A")
+        status = (fields.get("status") or {}).get("name", "N/A")
 
         output += f"- **{key}**: {summary} [{status}]\n"
 
